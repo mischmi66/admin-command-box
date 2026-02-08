@@ -11,9 +11,20 @@ class AdminApp:
         self.root.geometry("800x600")
         
         # Datenbankverbindung
-        self.db_path = "/mnt/truenas/database/admin.db"
+        self.db_path = "/Volumes/app-data/db/commands.db"
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
+        
+        # Tabelle erstellen falls nicht existiert
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS commands (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                kategorie TEXT NOT NULL,
+                befehl TEXT NOT NULL,
+                beschreibung TEXT
+            )
+        """)
+        self.conn.commit()
         
         # GUI Komponenten
         self.create_menu()
@@ -40,11 +51,21 @@ class AdminApp:
         main_frame = ttk.Frame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
+        # Suchfeld
+        search_frame = ttk.Frame(main_frame)
+        search_frame.pack(fill=tk.X, pady=5)
+        
+        self.search_var = tk.StringVar()
+        search_entry = ttk.Entry(search_frame, textvariable=self.search_var)
+        search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        search_entry.bind('<KeyRelease>', self.filter_data)
+        
         # Treeview für Datenanzeige
-        self.tree = ttk.Treeview(main_frame, columns=("ID", "Name", "Wert"), show="headings")
+        self.tree = ttk.Treeview(main_frame, columns=("ID", "Kategorie", "Befehl", "Beschreibung"), show="headings")
         self.tree.heading("ID", text="ID")
-        self.tree.heading("Name", text="Name")
-        self.tree.heading("Wert", text="Wert")
+        self.tree.heading("Kategorie", text="Kategorie")
+        self.tree.heading("Befehl", text="Befehl")
+        self.tree.heading("Beschreibung", text="Beschreibung")
         self.tree.pack(fill=tk.BOTH, expand=True)
         
         # Buttons
@@ -60,17 +81,92 @@ class AdminApp:
     
     def load_data(self):
         self.tree.delete(*self.tree.get_children())
-        self.cursor.execute("SELECT * FROM entries")
+        self.cursor.execute("SELECT * FROM commands")
+        for row in self.cursor.fetchall():
+            self.tree.insert("", tk.END, values=row)
+    
+    def filter_data(self, event=None):
+        query = self.search_var.get()
+        self.tree.delete(*self.tree.get_children())
+        self.cursor.execute("""
+            SELECT * FROM commands 
+            WHERE kategorie LIKE ? OR befehl LIKE ? OR beschreibung LIKE ?
+        """, (f"%{query}%", f"%{query}%", f"%{query}%"))
         for row in self.cursor.fetchall():
             self.tree.insert("", tk.END, values=row)
     
     def add_entry(self):
-        # Platzhalter für Add-Logik
-        messagebox.showinfo("Info", "Add-Funktion wird implementiert")
+        add_window = tk.Toplevel(self.root)
+        add_window.title("Neuen Befehl hinzufügen")
+        
+        # Eingabefelder
+        ttk.Label(add_window, text="Kategorie:").grid(row=0, column=0, padx=5, pady=5)
+        category_entry = ttk.Entry(add_window)
+        category_entry.grid(row=0, column=1, padx=5, pady=5)
+        
+        ttk.Label(add_window, text="Befehl:").grid(row=1, column=0, padx=5, pady=5)
+        command_entry = ttk.Entry(add_window)
+        command_entry.grid(row=1, column=1, padx=5, pady=5)
+        
+        ttk.Label(add_window, text="Beschreibung:").grid(row=2, column=0, padx=5, pady=5)
+        description_entry = ttk.Entry(add_window)
+        description_entry.grid(row=2, column=1, padx=5, pady=5)
+        
+        def save():
+            self.cursor.execute("""
+                INSERT INTO commands (kategorie, befehl, beschreibung)
+                VALUES (?, ?, ?)
+            """, (category_entry.get(), command_entry.get(), description_entry.get()))
+            self.conn.commit()
+            self.load_data()
+            add_window.destroy()
+        
+        ttk.Button(add_window, text="Speichern", command=save).grid(row=3, column=1, padx=5, pady=5, sticky=tk.E)
     
     def edit_entry(self):
-        # Platzhalter für Edit-Logik
-        messagebox.showinfo("Info", "Edit-Funktion wird implementiert")
+        selected = self.tree.selection()
+        if not selected:
+            messagebox.showwarning("Warnung", "Bitte wählen Sie einen Eintrag zum Bearbeiten aus")
+            return
+        
+        item_id = self.tree.item(selected[0])['values'][0]
+        
+        edit_window = tk.Toplevel(self.root)
+        edit_window.title("Befehl bearbeiten")
+        
+        # Aktuelle Werte holen
+        self.cursor.execute("SELECT * FROM commands WHERE id=?", (item_id,))
+        row = self.cursor.fetchone()
+        
+        # Eingabefelder
+        ttk.Label(edit_window, text="Kategorie:").grid(row=0, column=0, padx=5, pady=5)
+        category_entry = ttk.Entry(edit_window)
+        category_entry.insert(0, row[1])
+        category_entry.grid(row=0, column=1, padx=5, pady=5)
+        
+        ttk.Label(edit_window, text="Befehl:").grid(row=1, column=0, padx=5, pady=5)
+        command_entry = ttk.Entry(edit_window)
+        command_entry.insert(0, row[2])
+        command_entry.grid(row=1, column=1, padx=5, pady=5)
+        
+        ttk.Label(edit_window, text="Beschreibung:").grid(row=2, column=0, padx=5, pady=5)
+        description_entry = ttk.Entry(edit_window)
+        description_entry.insert(0, row[3])
+        description_entry.grid(row=2, column=1, padx=5, pady=5)
+        
+        def save():
+            self.cursor.execute("""
+                UPDATE commands SET
+                kategorie = ?,
+                befehl = ?,
+                beschreibung = ?
+                WHERE id = ?
+            """, (category_entry.get(), command_entry.get(), description_entry.get(), item_id))
+            self.conn.commit()
+            self.load_data()
+            edit_window.destroy()
+        
+        ttk.Button(edit_window, text="Speichern", command=save).grid(row=3, column=1, padx=5, pady=5, sticky=tk.E)
     
     def delete_entry(self):
         selected = self.tree.selection()
