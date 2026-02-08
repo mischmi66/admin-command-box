@@ -110,8 +110,8 @@ class AdminApp:
         """, (category,))
         for row in self.cursor.fetchall():
             # Reihenfolge der Werte an neue Spaltenreihenfolge anpassen
-            item_id = self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"))
-            self.tree.tag_bind(item_id, "<Button-1>", lambda e, id=row[0]: self.copy_command(id))
+            item_id = self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"), tags=('copy_action',))
+            self.tree.tag_bind('copy_action', '<Button-1>', lambda e, id=row[0]: self.copy_command(id))
     
     def update_filter(self, *args):
         selected_category = self.category_filter_var.get()
@@ -224,6 +224,7 @@ class AdminApp:
             self.load_data()
     
     def copy_command(self, db_id):
+        print('KLICK REGISTRIERT')
         print('\n==== COPY COMMAND CALLED ====')
         print(f'Copy-Funktion gestartet für ID: {db_id}')
         
