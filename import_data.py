@@ -1,7 +1,23 @@
 import sqlite3
+import os
 
+<<<<<<< HEAD
 # Pfad zur Datenbank auf dem TrueNAS
 db_path = "/Volumes/app-data/db/commands.db"
+=======
+def get_db_path():
+    """Prüft ob das TrueNAS Volume verfügbar ist, sonst lokale DB nutzen"""
+    truenas_path = "/Volumes/app-data/db/commands.db"
+    local_path = "commands.db"
+    
+    if os.path.exists(os.path.dirname(truenas_path)):
+        return truenas_path
+    else:
+        return local_path
+
+# Pfad zu deiner Datenbank
+db_path = get_db_path()
+>>>>>>> bb6ee01 (feat: Pfad-Logik für Datenbank flexibilisieren und Filter-Verhalten verbessern)
 
 # Die vollständige Befehlsliste (Zusammenführung deiner Liste + Experten-Tipps)
 commands = [

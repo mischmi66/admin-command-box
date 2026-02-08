@@ -4,6 +4,16 @@ import sqlite3
 import pyperclip
 import os
 
+def get_db_path():
+    """Prüft ob das TrueNAS Volume verfügbar ist, sonst lokale DB nutzen"""
+    truenas_path = "/Volumes/app-data/db/commands.db"
+    local_path = "commands.db"
+    
+    if os.path.exists(os.path.dirname(truenas_path)):
+        return truenas_path
+    else:
+        return local_path
+
 class AdminApp:
     def __init__(self, root):
         self.root = root
@@ -11,7 +21,7 @@ class AdminApp:
         self.root.geometry("800x600")
         
         # Datenbankverbindung
-        self.db_path = "/Volumes/app-data/db/commands.db"
+        self.db_path = get_db_path()
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
         
@@ -103,14 +113,16 @@ class AdminApp:
     
     def load_data(self, category="Alle"):
         self.tree.delete(*self.tree.get_children())
-        if category == "Alle":
-            return
         
-        self.cursor.execute("""
-            SELECT * FROM commands 
-            WHERE kategorie = ?
-            ORDER BY befehl ASC
-        """, (category,))
+        if category == "Alle":
+            self.cursor.execute("SELECT * FROM commands ORDER BY befehl ASC")
+        else:
+            self.cursor.execute("""
+                SELECT * FROM commands 
+                WHERE kategorie = ?
+                ORDER BY befehl ASC
+            """, (category,))
+        
         for row in self.cursor.fetchall():
             # Reihenfolge der Werte an neue Spaltenreihenfolge anpassen
             self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"))
@@ -122,7 +134,7 @@ class AdminApp:
         search_query = self.search_var.get()
         
         if selected_category == "Alle":
-            query = "SELECT * FROM commands WHERE beschreibung LIKE ? OR befehl LIKE ?"
+            query = "SELECT * FROM commands WHERE beschreibung LIKE ? OR befehl LIKE ? ORDER BY befehl ASC"
             params = (f"%{search_query}%", f"%{search_query}%")
         else:
             query = """SELECT * FROM commands 
