@@ -94,7 +94,7 @@ class AdminApp:
         button_frame = ttk.Frame(main_frame)
         button_frame.pack(fill=tk.X, pady=5)
         
-        ttk.Button(button_frame, text="Aktualisieren", command=self.load_data).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="Aktualisieren", command=self.update_filter).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="Hinzufügen", command=self.add_entry).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="Bearbeiten", command=self.edit_entry).pack(side=tk.LEFT, padx=5)
         ttk.Button(button_frame, text="Löschen", command=self.delete_entry).pack(side=tk.LEFT, padx=5)
@@ -116,32 +116,28 @@ class AdminApp:
             self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"))
     
     def update_filter(self, *args):
+        """Aktualisiert die Liste basierend auf aktuellem Filter"""
+        self.tree.delete(*self.tree.get_children())
         selected_category = self.category_filter_var.get()
-        if selected_category == "Alle":
-            self.tree.delete(*self.tree.get_children())
-            return
+        search_query = self.search_var.get()
         
-        self.load_data(selected_category)
-        self.filter_data()
+        if selected_category == "Alle":
+            query = "SELECT * FROM commands WHERE beschreibung LIKE ? OR befehl LIKE ?"
+            params = (f"%{search_query}%", f"%{search_query}%")
+        else:
+            query = """SELECT * FROM commands 
+                    WHERE kategorie = ? 
+                    AND (befehl LIKE ? OR beschreibung LIKE ?)
+                    ORDER BY befehl ASC"""
+            params = (selected_category, f"%{search_query}%", f"%{search_query}%")
+        
+        self.cursor.execute(query, params)
+        for row in self.cursor.fetchall():
+            self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"))
     
     def filter_data(self, event=None):
-        query = self.search_var.get()
-        selected_category = self.category_filter_var.get()
-        
-        if selected_category == "Alle":
-            return
-        
-        self.tree.delete(*self.tree.get_children())
-        self.cursor.execute("""
-            SELECT * FROM commands 
-            WHERE kategorie = ? AND (befehl LIKE ? OR beschreibung LIKE ?)
-            ORDER BY befehl ASC
-        """, (selected_category, f"%{query}%", f"%{query}%"))
-        
-        for row in self.cursor.fetchall():
-            # Reihenfolge der Werte an neue Spaltenreihenfolge anpassen
-            item_id = self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"))
-            self.tree.tag_bind(item_id, "<Button-1>", lambda e, id=row[0]: self.copy_command(id))
+        """Trigger für die Suche - ruft einfach update_filter auf"""
+        self.update_filter()
     
     def add_entry(self):
         add_window = tk.Toplevel(self.root)
