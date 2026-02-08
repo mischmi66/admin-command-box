@@ -61,11 +61,20 @@ class AdminApp:
         search_entry.bind('<KeyRelease>', self.filter_data)
         
         # Treeview für Datenanzeige
-        self.tree = ttk.Treeview(main_frame, columns=("ID", "Kategorie", "Befehl", "Beschreibung"), show="headings")
+        self.tree = ttk.Treeview(main_frame, columns=("ID", "Kategorie", "Befehl", "Beschreibung", "Copy"), show="headings")
         self.tree.heading("ID", text="ID")
         self.tree.heading("Kategorie", text="Kategorie")
         self.tree.heading("Befehl", text="Befehl")
         self.tree.heading("Beschreibung", text="Beschreibung")
+        self.tree.heading("Copy", text="")
+        
+        # Spaltenbreiten optimieren
+        self.tree.column("ID", width=50, stretch=False)
+        self.tree.column("Kategorie", width=100, stretch=False)
+        self.tree.column("Befehl", width=300)
+        self.tree.column("Beschreibung", width=200)
+        self.tree.column("Copy", width=50, stretch=False)
+        
         self.tree.pack(fill=tk.BOTH, expand=True)
         
         # Buttons
@@ -83,7 +92,9 @@ class AdminApp:
         self.tree.delete(*self.tree.get_children())
         self.cursor.execute("SELECT * FROM commands")
         for row in self.cursor.fetchall():
-            self.tree.insert("", tk.END, values=row)
+            # Füge Copy-Button hinzu
+            self.tree.insert("", tk.END, values=row + ("📋",))
+            self.tree.tag_bind(row[0], "<Button-1>", self.on_copy_click)
     
     def filter_data(self, event=None):
         query = self.search_var.get()
@@ -99,10 +110,11 @@ class AdminApp:
         add_window = tk.Toplevel(self.root)
         add_window.title("Neuen Befehl hinzufügen")
         
-        # Eingabefelder
+        # Kategorie Dropdown
         ttk.Label(add_window, text="Kategorie:").grid(row=0, column=0, padx=5, pady=5)
-        category_entry = ttk.Entry(add_window)
-        category_entry.grid(row=0, column=1, padx=5, pady=5)
+        self.category_var = tk.StringVar()
+        category_menu = ttk.OptionMenu(add_window, self.category_var, "Mac", "Mac", "Linux", "fwconsole")
+        category_menu.grid(row=0, column=1, padx=5, pady=5, sticky=tk.EW)
         
         ttk.Label(add_window, text="Befehl:").grid(row=1, column=0, padx=5, pady=5)
         command_entry = ttk.Entry(add_window)
@@ -138,11 +150,11 @@ class AdminApp:
         self.cursor.execute("SELECT * FROM commands WHERE id=?", (item_id,))
         row = self.cursor.fetchone()
         
-        # Eingabefelder
+        # Kategorie Dropdown
         ttk.Label(edit_window, text="Kategorie:").grid(row=0, column=0, padx=5, pady=5)
-        category_entry = ttk.Entry(edit_window)
-        category_entry.insert(0, row[1])
-        category_entry.grid(row=0, column=1, padx=5, pady=5)
+        self.category_var = tk.StringVar()
+        category_menu = ttk.OptionMenu(edit_window, self.category_var, row[1], "Mac", "Linux", "fwconsole")
+        category_menu.grid(row=0, column=1, padx=5, pady=5, sticky=tk.EW)
         
         ttk.Label(edit_window, text="Befehl:").grid(row=1, column=0, padx=5, pady=5)
         command_entry = ttk.Entry(edit_window)
@@ -176,10 +188,20 @@ class AdminApp:
             self.conn.commit()
             self.load_data()
     
+    def on_copy_click(self, event):
+        region = self.tree.identify_region(event.x, event.y)
+        if region == "cell":
+            column = self.tree.identify_column(event.x)
+            item = self.tree.identify_row(event.y)
+            if column == "#5":  # Copy-Spalte
+                command = self.tree.item(item)['values'][2]
+                pyperclip.copy(command)
+                messagebox.showinfo("Kopiert", "Befehl wurde in die Zwischenablage kopiert")
+    
     def copy_to_clipboard(self):
         selected = self.tree.selection()
         if selected:
-            value = self.tree.item(selected[0])['values'][1]
+            value = self.tree.item(selected[0])['values'][2]
             pyperclip.copy(value)
     
     def paste_from_clipboard(self):
