@@ -90,7 +90,7 @@ class AdminApp:
     
     def load_data(self):
         self.tree.delete(*self.tree.get_children())
-        self.cursor.execute("SELECT * FROM commands")
+        self.cursor.execute("SELECT * FROM commands ORDER BY kategorie ASC, befehl ASC")
         for row in self.cursor.fetchall():
             # Füge Copy-X-Button hinzu
             self.tree.insert("", tk.END, values=row + ("📋",), tags=(f"copy_{row[0]}",))
@@ -102,6 +102,7 @@ class AdminApp:
         self.cursor.execute("""
             SELECT * FROM commands 
             WHERE kategorie LIKE ? OR befehl LIKE ? OR beschreibung LIKE ?
+            ORDER BY kategorie ASC, befehl ASC
         """, (f"%{query}%", f"%{query}%", f"%{query}%"))
         for row in self.cursor.fetchall():
             self.tree.insert("", tk.END, values=row)
