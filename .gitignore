@@ -10,6 +10,10 @@ build/
 dist/
 *.spec
 
+# Datenbank (Lokal & TrueNAS)
+*.db
+commands.db
+
 # macOS
 .DS_Store
 .aider*
