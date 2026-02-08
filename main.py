@@ -87,6 +87,9 @@ class AdminApp:
         
         self.tree.pack(fill=tk.BOTH, expand=True)
         
+        # Globales Klick-Event
+        self.tree.bind('<Button-1>', self.on_tree_click)
+        
         # Buttons
         button_frame = ttk.Frame(main_frame)
         button_frame.pack(fill=tk.X, pady=5)
@@ -110,8 +113,7 @@ class AdminApp:
         """, (category,))
         for row in self.cursor.fetchall():
             # Reihenfolge der Werte an neue Spaltenreihenfolge anpassen
-            item_id = self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"), tags=('copy_action',))
-            self.tree.tag_bind('copy_action', '<Button-1>', lambda e, id=row[0]: self.copy_command(id))
+            self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"))
     
     def update_filter(self, *args):
         selected_category = self.category_filter_var.get()
@@ -222,6 +224,15 @@ class AdminApp:
             self.cursor.execute("DELETE FROM commands WHERE id=?", (item_id,))
             self.conn.commit()
             self.load_data()
+    
+    def on_tree_click(self, event):
+        region = self.tree.identify_region(event.x, event.y)
+        if region == "cell":
+            column = self.tree.identify_column(event.x)
+            if column == "#5":  # Letzte Spalte (Copy)
+                item = self.tree.identify_row(event.y)
+                db_id = self.tree.item(item)['values'][0]
+                self.copy_command(db_id)
     
     def copy_command(self, db_id):
         print('KLICK REGISTRIERT')
