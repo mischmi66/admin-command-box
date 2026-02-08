@@ -1,3 +1,0 @@
-([('AdminTool',
-   '/Users/micasamacmini/coding-projects/admin-command-box/dist/AdminTool',
-   'EXECUTABLE')],)
