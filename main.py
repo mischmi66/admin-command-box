@@ -128,8 +128,8 @@ class AdminApp:
             """, (category,))
         
         for row in self.cursor.fetchall():
-            # Korrekte Reihenfolge: ID, Kategorie, Befehl, Beschreibung, Copy
-            self.tree.insert("", tk.END, values=(row[0], row[1], row[2], row[3], "📋"))
+            # Korrekte Reihenfolge: ID, Kategorie, Beschreibung, Befehl, Copy
+            self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"))
     
     def update_filter(self, *args):
         """Aktualisiert die Liste basierend auf aktuellem Filter"""
@@ -149,8 +149,8 @@ class AdminApp:
         
         self.cursor.execute(query, params)
         for row in self.cursor.fetchall():
-            # Korrekte Reihenfolge: ID, Kategorie, Befehl, Beschreibung, Copy
-            self.tree.insert("", tk.END, values=(row[0], row[1], row[2], row[3], "📋"))
+            # Korrekte Reihenfolge: ID, Kategorie, Beschreibung, Befehl, Copy
+            self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"))
     
     def filter_data(self, event=None):
         """Trigger für die Suche - ruft einfach update_filter auf"""
