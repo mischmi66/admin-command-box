@@ -71,18 +71,18 @@ class AdminApp:
         search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         
         # Treeview für Datenanzeige
-        self.tree = ttk.Treeview(main_frame, columns=("ID", "Kategorie", "Befehl", "Beschreibung", "Copy"), show="headings")
+        self.tree = ttk.Treeview(main_frame, columns=("ID", "Kategorie", "Beschreibung", "Befehl", "Copy"), show="headings")
         self.tree.heading("ID", text="ID")
         self.tree.heading("Kategorie", text="Kategorie")
-        self.tree.heading("Befehl", text="Befehl")
         self.tree.heading("Beschreibung", text="Beschreibung")
+        self.tree.heading("Befehl", text="Befehl")
         self.tree.heading("Copy", text="")
         
         # Spaltenbreiten optimieren
         self.tree.column("ID", width=50, stretch=False)
         self.tree.column("Kategorie", width=100, stretch=False)
-        self.tree.column("Befehl", width=300)
-        self.tree.column("Beschreibung", width=200)
+        self.tree.column("Beschreibung", width=300)
+        self.tree.column("Befehl", width=250)
         self.tree.column("Copy", width=50, stretch=False)
         
         self.tree.pack(fill=tk.BOTH, expand=True)
@@ -109,7 +109,8 @@ class AdminApp:
             ORDER BY befehl ASC
         """, (category,))
         for row in self.cursor.fetchall():
-            self.tree.insert("", tk.END, values=row + ("📋",), tags=(f"copy_{row[0]}",))
+            # Reihenfolge der Werte an neue Spaltenreihenfolge anpassen
+            self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"), tags=(f"copy_{row[0]}",))
             self.tree.tag_bind(f"copy_{row[0]}", "<Button-1>", lambda e, id=row[0]: self.copy_command(id))
     
     def update_filter(self, *args):
@@ -136,7 +137,8 @@ class AdminApp:
         """, (selected_category, f"%{query}%", f"%{query}%"))
         
         for row in self.cursor.fetchall():
-            self.tree.insert("", tk.END, values=row + ("📋",), tags=(f"copy_{row[0]}",))
+            # Reihenfolge der Werte an neue Spaltenreihenfolge anpassen
+            self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"), tags=(f"copy_{row[0]}",))
             self.tree.tag_bind(f"copy_{row[0]}", "<Button-1>", lambda e, id=row[0]: self.copy_command(id))
     
     def add_entry(self):
