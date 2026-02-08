@@ -5,14 +5,18 @@ import pyperclip
 import os
 
 def get_db_path():
-    """Prüft ob das TrueNAS Volume verfügbar ist, sonst lokale DB nutzen"""
-    truenas_path = "/Volumes/app-data/db/commands.db"
-    local_path = "commands.db"
+    """Prüft verschiedene mögliche Datenbankpfade"""
+    paths = [
+        "/Volumes/app-data/db/commands.db",  # MacBook Pfad
+        "/Volumes/daten/it-service/datenbanken/commands.db",  # Mac Mini Pfad
+        "commands.db"  # Lokale Fallback-DB
+    ]
     
-    if os.path.exists(os.path.dirname(truenas_path)):
-        return truenas_path
-    else:
-        return local_path
+    for path in paths:
+        if os.path.exists(path):
+            return path
+    
+    return "commands.db"  # Finaler Fallback
 
 class AdminApp:
     def __init__(self, root):
