@@ -1,4 +1,0 @@
-([('TrueNAS Admin Tool',
-   '/Users/micasamacmini/coding-projects/admin-command-box/dist/TrueNAS Admin '
-   'Tool',
-   'EXECUTABLE')],)
