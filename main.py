@@ -80,9 +80,9 @@ class AdminApp:
         
         # Spaltenbreiten optimieren
         self.tree.column("ID", width=50, stretch=False)
-        self.tree.column("Kategorie", width=100, stretch=False)
-        self.tree.column("Beschreibung", width=300)
-        self.tree.column("Befehl", width=250)
+        self.tree.column("Kategorie", width=120, stretch=False)
+        self.tree.column("Beschreibung", width=350)
+        self.tree.column("Befehl", width=200)
         self.tree.column("Copy", width=50, stretch=False)
         
         self.tree.pack(fill=tk.BOTH, expand=True)
@@ -110,8 +110,8 @@ class AdminApp:
         """, (category,))
         for row in self.cursor.fetchall():
             # Reihenfolge der Werte an neue Spaltenreihenfolge anpassen
-            self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"), tags=(f"copy_{row[0]}",))
-            self.tree.tag_bind(f"copy_{row[0]}", "<Button-1>", lambda e, id=row[0]: self.copy_command(id))
+            item_id = self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"))
+            self.tree.tag_bind(item_id, "<Button-1>", lambda e, id=item_id: self.copy_command(id))
     
     def update_filter(self, *args):
         selected_category = self.category_filter_var.get()
@@ -225,21 +225,20 @@ class AdminApp:
     
     def copy_command(self, item_id):
         try:
-            # Befehl aus DB holen und kopieren
-            self.cursor.execute("SELECT befehl FROM commands WHERE id=?", (item_id,))
-            command = self.cursor.fetchone()[0]
+            # Befehl direkt aus Treeview holen
+            command = self.tree.item(item_id)['values'][3]
             pyperclip.copy(command)
             
             # Visuelles Feedback
-            self.tree.set(f"I00{item_id}", "Copy", "✅")  # Update Icon
+            self.tree.set(item_id, "Copy", "✅")
             
             # Reset nach 2 Sekunden
-            self.root.after(2000, lambda: self.tree.set(f"I00{item_id}", "Copy", "📋"))
+            self.root.after(2000, lambda: self.tree.set(item_id, "Copy", "📋"))
             
         except Exception as e:
             # Fehlerfall: Icon kurz rot anzeigen
-            self.tree.set(f"I00{item_id}", "Copy", "❌")
-            self.root.after(1000, lambda: self.tree.set(f"I00{item_id}", "Copy", "📋"))
+            self.tree.set(item_id, "Copy", "❌")
+            self.root.after(1000, lambda: self.tree.set(item_id, "Copy", "📋"))
     
     def copy_to_clipboard(self):
         selected = self.tree.selection()
