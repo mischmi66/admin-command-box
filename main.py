@@ -111,7 +111,7 @@ class AdminApp:
         for row in self.cursor.fetchall():
             # Reihenfolge der Werte an neue Spaltenreihenfolge anpassen
             item_id = self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"))
-            self.tree.tag_bind(item_id, "<Button-1>", lambda e, id=item_id: self.copy_command(id))
+            self.tree.tag_bind(item_id, "<Button-1>", lambda e, id=row[0]: self.copy_command(id))
     
     def update_filter(self, *args):
         selected_category = self.category_filter_var.get()
@@ -138,8 +138,8 @@ class AdminApp:
         
         for row in self.cursor.fetchall():
             # Reihenfolge der Werte an neue Spaltenreihenfolge anpassen
-            self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"), tags=(f"copy_{row[0]}",))
-            self.tree.tag_bind(f"copy_{row[0]}", "<Button-1>", lambda e, id=row[0]: self.copy_command(id))
+            item_id = self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"))
+            self.tree.tag_bind(item_id, "<Button-1>", lambda e, id=row[0]: self.copy_command(id))
     
     def add_entry(self):
         add_window = tk.Toplevel(self.root)
@@ -223,22 +223,28 @@ class AdminApp:
             self.conn.commit()
             self.load_data()
     
-    def copy_command(self, item_id):
+    def copy_command(self, db_id):
         try:
-            # Befehl direkt aus Treeview holen
-            command = self.tree.item(item_id)['values'][3]
-            pyperclip.copy(command)
+            # Durch alle sichtbaren Zeilen im Treeview suchen
+            for item_id in self.tree.get_children():
+                if self.tree.item(item_id)['values'][0] == db_id:  # ID in erster Spalte
+                    # Befehl aus Spalte 3 (Index 3) holen
+                    command = self.tree.item(item_id)['values'][3]
+                    pyperclip.copy(command)
+                    
+                    # Visuelles Feedback
+                    self.tree.set(item_id, "Copy", "✅")
+                    
+                    # Reset nach 2 Sekunden
+                    self.root.after(2000, lambda i=item_id: self.tree.set(i, "Copy", "📋"))
+                    return
             
-            # Visuelles Feedback
-            self.tree.set(item_id, "Copy", "✅")
-            
-            # Reset nach 2 Sekunden
-            self.root.after(2000, lambda: self.tree.set(item_id, "Copy", "📋"))
+            # Falls nicht gefunden
+            messagebox.showwarning("Hinweis", "Befehl ist im aktuellen Filter nicht sichtbar")
             
         except Exception as e:
-            # Fehlerfall: Icon kurz rot anzeigen
-            self.tree.set(item_id, "Copy", "❌")
-            self.root.after(1000, lambda: self.tree.set(item_id, "Copy", "📋"))
+            # Fehlerfall: Kurze Meldung anzeigen
+            messagebox.showerror("Fehler", f"Befehl konnte nicht kopiert werden: {str(e)}", parent=self.root)
     
     def copy_to_clipboard(self):
         selected = self.tree.selection()
