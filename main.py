@@ -61,14 +61,14 @@ class AdminApp:
         self.category_filter_var.set("Alle")  # Standardwert
         category_filter = ttk.OptionMenu(filter_frame, self.category_filter_var, "Alle", "Alle", "GIT", "Mac", "Linux", "fwconsole")
         category_filter.pack(side=tk.LEFT, padx=5)
-        self.category_filter_var.trace('w', self.update_filter)
+        self.category_filter_var.trace_add('write', lambda *args: self.update_filter())
         
         # Suchfeld
         ttk.Label(filter_frame, text="Suchen:").pack(side=tk.LEFT, padx=5)
         self.search_var = tk.StringVar()
+        self.search_var.trace_add('write', lambda *args: self.filter_data())
         search_entry = ttk.Entry(filter_frame, textvariable=self.search_var)
         search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-        search_entry.bind('<KeyRelease>', self.filter_data)
         
         # Treeview für Datenanzeige
         self.tree = ttk.Treeview(main_frame, columns=("ID", "Kategorie", "Befehl", "Beschreibung", "Copy"), show="headings")
