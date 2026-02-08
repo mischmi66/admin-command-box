@@ -113,7 +113,7 @@ class AdminApp:
         # Kategorie Dropdown
         ttk.Label(add_window, text="Kategorie:").grid(row=0, column=0, padx=5, pady=5)
         self.category_var = tk.StringVar()
-        category_menu = ttk.OptionMenu(add_window, self.category_var, "Mac", "Mac", "Linux", "fwconsole")
+        category_menu = ttk.OptionMenu(add_window, self.category_var, "Mac", "Mac", "Linux", "fwconsole", "GIT")
         category_menu.grid(row=0, column=1, padx=5, pady=5, sticky=tk.EW)
         
         ttk.Label(add_window, text="Befehl:").grid(row=1, column=0, padx=5, pady=5)
@@ -153,7 +153,7 @@ class AdminApp:
         # Kategorie Dropdown
         ttk.Label(edit_window, text="Kategorie:").grid(row=0, column=0, padx=5, pady=5)
         self.category_var = tk.StringVar()
-        category_menu = ttk.OptionMenu(edit_window, self.category_var, row[1], "Mac", "Linux", "fwconsole")
+        category_menu = ttk.OptionMenu(edit_window, self.category_var, row[1], "Mac", "Linux", "fwconsole", "GIT")
         category_menu.grid(row=0, column=1, padx=5, pady=5, sticky=tk.EW)
         
         ttk.Label(edit_window, text="Befehl:").grid(row=1, column=0, padx=5, pady=5)
