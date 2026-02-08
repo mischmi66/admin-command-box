@@ -224,41 +224,43 @@ class AdminApp:
             self.load_data()
     
     def copy_command(self, db_id):
+        print('\n==== COPY COMMAND CALLED ====')
+        print(f'Copy-Funktion gestartet für ID: {db_id}')
+        
         try:
-            print(f"Versuche Befehl mit ID {db_id} zu kopieren...")
-
             # Durch alle sichtbaren Zeilen im Treeview suchen
             for item_id in self.tree.get_children():
                 values = self.tree.item(item_id)['values']
-                current_id = str(values[0])  # ID in erster Spalte
-                print(f"Prüfe Item {item_id} mit ID {current_id}")
+                print(f'\nDEBUG: Werte der Zeile: {values}')
+                print(f'DEBUG: Spalten: {self.tree["columns"]}')
                 
+                current_id = str(values[0])  # ID in erster Spalte
                 if current_id == str(db_id):
-                    command = values[3]  # Befehl ist jetzt in Spalte 3 (Index 3)
-                    print(f"Gefundener Befehl: {command}")
+                    print(f'DEBUG: Match gefunden für ID {db_id}')
+                    command = values[3]  # Befehl in Spalte 3
+                    print(f'DEBUG: Befehl "{command}" wird kopiert...')
                     
-                    # In Zwischenablage kopieren
+                    # 1. Zuerst kopieren
                     pyperclip.copy(command)
-                    print("Befehl wurde kopiert")
+                    print('DEBUG: Befehl in Zwischenablage kopiert')
                     
-                    # Visuelles Feedback - direkt im Treeview
-                    self.tree.set(item_id, "Copy", "✅")
-                    print("Icon aktualisiert")
+                    # 2. Dann visuelles Feedback
+                    self.tree.set(item_id, column=4, value="✅")  # Direkter Spaltenindex
+                    self.tree.update_idletasks()  # Sofort aktualisieren
+                    print('DEBUG: Icon auf ✅ aktualisiert')
                     
-                    # Reset nach 2 Sekunden
-                    self.root.after(2000, lambda i=item_id: self.tree.set(i, "Copy", "📋"))
-                    print("Reset Timer gestartet")
+                    # 3. Reset Timer starten
+                    self.root.after(2000, lambda i=item_id: self.tree.set(i, column=4, value="📋"))
+                    print('DEBUG: Reset Timer gestartet (2 Sekunden)')
                     return
             
             # Falls nicht gefunden
-            print("Befehl nicht im aktuellen Filter gefunden")
-            messagebox.showwarning("Hinweis", "Befehl ist im aktuellen Filter nicht sichtbar")
+            print('DEBUG: Befehl wurde nicht in sichtbaren Zeilen gefunden')
+            messagebox.showwarning("Info", "Befehl ist im aktuellen Filter nicht sichtbar", parent=self.root)
             
         except Exception as e:
-            print(f"Fehler beim Kopieren: {str(e)}")
-            messagebox.showerror("Fehler", 
-                "Befehl konnte nicht kopiert werden:\n" + str(e), 
-                parent=self.root)
+            print(f'DEBUG: FEHLER: {str(e)}')
+            messagebox.showerror("Fehler", f"Kopieren fehlgeschlagen:\n{str(e)}", parent=self.root)
     
     def copy_to_clipboard(self):
         selected = self.tree.selection()
