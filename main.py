@@ -92,9 +92,9 @@ class AdminApp:
         self.tree.delete(*self.tree.get_children())
         self.cursor.execute("SELECT * FROM commands")
         for row in self.cursor.fetchall():
-            # Füge Copy-Button hinzu
-            self.tree.insert("", tk.END, values=row + ("📋",))
-            self.tree.tag_bind(row[0], "<Button-1>", self.on_copy_click)
+            # Füge Copy-X-Button hinzu
+            self.tree.insert("", tk.END, values=row + ("📋",), tags=(f"copy_{row[0]}",))
+            self.tree.tag_bind(f"copy_{row[0]}", "<Button-1>", lambda e, id=row[0]: self.copy_command(id))
     
     def filter_data(self, event=None):
         query = self.search_var.get()
@@ -188,15 +188,29 @@ class AdminApp:
             self.conn.commit()
             self.load_data()
     
-    def on_copy_click(self, event):
-        region = self.tree.identify_region(event.x, event.y)
-        if region == "cell":
-            column = self.tree.identify_column(event.x)
-            item = self.tree.identify_row(event.y)
-            if column == "#5":  # Copy-Spalte
-                command = self.tree.item(item)['values'][2]
+    def copy_command(self, item_id):
+        try:
+            # Befehl aus DB holen und kopieren
+            self.cursor.execute("SELECT befehl FROM commands WHERE id=?", (item_id,))
+            command = self.cursor.fetchone()[0]
+            
+            # Platzhalter prüfen und ggf. anzeigen
+            if "{" in command and "}" in command:
+                msg = ("Befehl enthält Platzhalter - bitte ersetzen:", command)
                 pyperclip.copy(command)
-                messagebox.showinfo("Kopiert", "Befehl wurde in die Zwischenablage kopiert")
+            else:
+                msg = "Befehl wurde kopiert"
+                pyperclip.copy(command)
+            
+            # Visuelles Feedback
+            self.tree.set(f"I00{item_id}", "Copy", "✅")  # Update Icon
+            
+            # Reset nach 2 Sekunden
+            self.root.after(2000, lambda: self.tree.set(f"I00{item_id}", "Copy", "📋"))
+            
+            messagebox.showinfo("Erfolg", msg)
+        except Exception as e:
+            messagebox.showerror("Fehler", f"Kopieren fehlgeschlagen: {str(e)}")
     
     def copy_to_clipboard(self):
         selected = self.tree.selection()
