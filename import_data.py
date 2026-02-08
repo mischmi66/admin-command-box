@@ -1,6 +1,6 @@
 import sqlite3
 
-# Pfad zu deiner Datenbank auf dem TrueNAS
+# Pfad zur Datenbank auf dem TrueNAS
 db_path = "/Volumes/app-data/db/commands.db"
 
 # Die vollständige Befehlsliste (Zusammenführung deiner Liste + Experten-Tipps)
