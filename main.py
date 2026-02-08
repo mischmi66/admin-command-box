@@ -193,14 +193,7 @@ class AdminApp:
             # Befehl aus DB holen und kopieren
             self.cursor.execute("SELECT befehl FROM commands WHERE id=?", (item_id,))
             command = self.cursor.fetchone()[0]
-            
-            # Platzhalter prüfen und ggf. anzeigen
-            if "{" in command and "}" in command:
-                msg = ("Befehl enthält Platzhalter - bitte ersetzen:", command)
-                pyperclip.copy(command)
-            else:
-                msg = "Befehl wurde kopiert"
-                pyperclip.copy(command)
+            pyperclip.copy(command)
             
             # Visuelles Feedback
             self.tree.set(f"I00{item_id}", "Copy", "✅")  # Update Icon
@@ -208,9 +201,10 @@ class AdminApp:
             # Reset nach 2 Sekunden
             self.root.after(2000, lambda: self.tree.set(f"I00{item_id}", "Copy", "📋"))
             
-            messagebox.showinfo("Erfolg", msg)
         except Exception as e:
-            messagebox.showerror("Fehler", f"Kopieren fehlgeschlagen: {str(e)}")
+            # Fehlerfall: Icon kurz rot anzeigen
+            self.tree.set(f"I00{item_id}", "Copy", "❌")
+            self.root.after(1000, lambda: self.tree.set(f"I00{item_id}", "Copy", "📋"))
     
     def copy_to_clipboard(self):
         selected = self.tree.selection()
