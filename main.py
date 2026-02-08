@@ -262,7 +262,7 @@ class AdminApp:
                 current_id = str(values[0])  # ID in erster Spalte
                 if current_id == str(db_id):
                     print(f'DEBUG: Match gefunden für ID {db_id}')
-                    command = values[2]  # Befehl ist jetzt Spalte 2 (3. Spalte insgesamt)
+                    command = values[3]  # Befehl ist jetzt Spalte 3 (Wert aus DB row[2])
                     print(f'DEBUG: Befehl "{command}" wird kopiert...')
                     
                     # 1. Zuerst kopieren
@@ -290,7 +290,7 @@ class AdminApp:
     def copy_to_clipboard(self):
         selected = self.tree.selection()
         if selected:
-            value = self.tree.item(selected[0])['values'][2]  # Befehl in Spalte 2
+            value = self.tree.item(selected[0])['values'][3]  # Befehl in Spalte 3 (DB row[2])
             pyperclip.copy(value)
     
     def paste_from_clipboard(self):
