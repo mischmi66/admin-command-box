@@ -128,7 +128,7 @@ class AdminApp:
             self.cursor.execute("""
                 INSERT INTO commands (kategorie, befehl, beschreibung)
                 VALUES (?, ?, ?)
-            """, (category_entry.get(), command_entry.get(), description_entry.get()))
+            """, (self.category_var.get(), command_entry.get(), description_entry.get()))
             self.conn.commit()
             self.load_data()
             add_window.destroy()
@@ -173,7 +173,7 @@ class AdminApp:
                 befehl = ?,
                 beschreibung = ?
                 WHERE id = ?
-            """, (category_entry.get(), command_entry.get(), description_entry.get(), item_id))
+            """, (self.category_var.get(), command_entry.get(), description_entry.get(), item_id))
             self.conn.commit()
             self.load_data()
             edit_window.destroy()
@@ -184,7 +184,7 @@ class AdminApp:
         selected = self.tree.selection()
         if selected:
             item_id = self.tree.item(selected[0])['values'][0]
-            self.cursor.execute("DELETE FROM entries WHERE id=?", (item_id,))
+            self.cursor.execute("DELETE FROM commands WHERE id=?", (item_id,))
             self.conn.commit()
             self.load_data()
     
