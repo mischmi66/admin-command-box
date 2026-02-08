@@ -225,26 +225,40 @@ class AdminApp:
     
     def copy_command(self, db_id):
         try:
+            print(f"Versuche Befehl mit ID {db_id} zu kopieren...")
+
             # Durch alle sichtbaren Zeilen im Treeview suchen
             for item_id in self.tree.get_children():
-                if self.tree.item(item_id)['values'][0] == db_id:  # ID in erster Spalte
-                    # Befehl aus Spalte 3 (Index 3) holen
-                    command = self.tree.item(item_id)['values'][3]
-                    pyperclip.copy(command)
+                values = self.tree.item(item_id)['values']
+                current_id = str(values[0])  # ID in erster Spalte
+                print(f"Prüfe Item {item_id} mit ID {current_id}")
+                
+                if current_id == str(db_id):
+                    command = values[3]  # Befehl ist jetzt in Spalte 3 (Index 3)
+                    print(f"Gefundener Befehl: {command}")
                     
-                    # Visuelles Feedback
+                    # In Zwischenablage kopieren
+                    pyperclip.copy(command)
+                    print("Befehl wurde kopiert")
+                    
+                    # Visuelles Feedback - direkt im Treeview
                     self.tree.set(item_id, "Copy", "✅")
+                    print("Icon aktualisiert")
                     
                     # Reset nach 2 Sekunden
                     self.root.after(2000, lambda i=item_id: self.tree.set(i, "Copy", "📋"))
+                    print("Reset Timer gestartet")
                     return
             
             # Falls nicht gefunden
+            print("Befehl nicht im aktuellen Filter gefunden")
             messagebox.showwarning("Hinweis", "Befehl ist im aktuellen Filter nicht sichtbar")
             
         except Exception as e:
-            # Fehlerfall: Kurze Meldung anzeigen
-            messagebox.showerror("Fehler", f"Befehl konnte nicht kopiert werden: {str(e)}", parent=self.root)
+            print(f"Fehler beim Kopieren: {str(e)}")
+            messagebox.showerror("Fehler", 
+                "Befehl konnte nicht kopiert werden:\n" + str(e), 
+                parent=self.root)
     
     def copy_to_clipboard(self):
         selected = self.tree.selection()
