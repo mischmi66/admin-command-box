@@ -51,12 +51,22 @@ class AdminApp:
         main_frame = ttk.Frame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Suchfeld
-        search_frame = ttk.Frame(main_frame)
-        search_frame.pack(fill=tk.X, pady=5)
+        # Filter und Suche
+        filter_frame = ttk.Frame(main_frame)
+        filter_frame.pack(fill=tk.X, pady=5)
         
+        # Kategorie Filter
+        ttk.Label(filter_frame, text="Kategorie:").pack(side=tk.LEFT, padx=5)
+        self.category_filter_var = tk.StringVar()
+        self.category_filter_var.set("Alle")  # Standardwert
+        category_filter = ttk.OptionMenu(filter_frame, self.category_filter_var, "Alle", "Alle", "GIT", "Mac", "Linux", "fwconsole")
+        category_filter.pack(side=tk.LEFT, padx=5)
+        self.category_filter_var.trace('w', self.update_filter)
+        
+        # Suchfeld
+        ttk.Label(filter_frame, text="Suchen:").pack(side=tk.LEFT, padx=5)
         self.search_var = tk.StringVar()
-        search_entry = ttk.Entry(search_frame, textvariable=self.search_var)
+        search_entry = ttk.Entry(filter_frame, textvariable=self.search_var)
         search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         search_entry.bind('<KeyRelease>', self.filter_data)
         
@@ -88,24 +98,46 @@ class AdminApp:
         
         self.load_data()
     
-    def load_data(self):
+    def load_data(self, category="Alle"):
         self.tree.delete(*self.tree.get_children())
-        self.cursor.execute("SELECT * FROM commands ORDER BY kategorie ASC, befehl ASC")
+        if category == "Alle":
+            return
+        
+        self.cursor.execute("""
+            SELECT * FROM commands 
+            WHERE kategorie = ?
+            ORDER BY befehl ASC
+        """, (category,))
         for row in self.cursor.fetchall():
-            # Füge Copy-X-Button hinzu
             self.tree.insert("", tk.END, values=row + ("📋",), tags=(f"copy_{row[0]}",))
             self.tree.tag_bind(f"copy_{row[0]}", "<Button-1>", lambda e, id=row[0]: self.copy_command(id))
     
+    def update_filter(self, *args):
+        selected_category = self.category_filter_var.get()
+        if selected_category == "Alle":
+            self.tree.delete(*self.tree.get_children())
+            return
+        
+        self.load_data(selected_category)
+        self.filter_data()
+    
     def filter_data(self, event=None):
         query = self.search_var.get()
+        selected_category = self.category_filter_var.get()
+        
+        if selected_category == "Alle":
+            return
+        
         self.tree.delete(*self.tree.get_children())
         self.cursor.execute("""
             SELECT * FROM commands 
-            WHERE kategorie LIKE ? OR befehl LIKE ? OR beschreibung LIKE ?
-            ORDER BY kategorie ASC, befehl ASC
-        """, (f"%{query}%", f"%{query}%", f"%{query}%"))
+            WHERE kategorie = ? AND (befehl LIKE ? OR beschreibung LIKE ?)
+            ORDER BY befehl ASC
+        """, (selected_category, f"%{query}%", f"%{query}%"))
+        
         for row in self.cursor.fetchall():
-            self.tree.insert("", tk.END, values=row)
+            self.tree.insert("", tk.END, values=row + ("📋",), tags=(f"copy_{row[0]}",))
+            self.tree.tag_bind(f"copy_{row[0]}", "<Button-1>", lambda e, id=row[0]: self.copy_command(id))
     
     def add_entry(self):
         add_window = tk.Toplevel(self.root)
