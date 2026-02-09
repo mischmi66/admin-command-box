@@ -31,7 +31,7 @@ def import_my_data():
     conn = setup_database()
     cursor = conn.cursor()
     
-    # Hier sind deine echten Daten für FreePBX 17 und Easybell
+    # Hier sind deine echten Daten für FreePBX 17, Easybell und Git
     commands = [
         ("FreePBX 17", "Asterisk Konsole öffnen", "asterisk -rvvv"),
         ("FreePBX 17", "FWConsole Reload", "fwconsole reload"),
@@ -40,7 +40,14 @@ def import_my_data():
         ("Easybell", "PJSIP Registrierungen", "pjsip show registrations"),
         ("Easybell", "PJSIP Endpunkte (Trunks)", "pjsip show endpoints"),
         ("Easybell", "SIP History/Logs", "pjsip set logger on"),
-        ("System", "Netzwerk-Schnittstellen (Mac)", "networksetup -listallnetworkservices")
+        ("System", "Netzwerk-Schnittstellen (Mac)", "networksetup -listallnetworkservices"),
+        ("Git", "Synchronisation: Holt Änderungen vom Server", "git pull"),
+        ("Git", "Status: Zeigt geänderte Dateien", "git status"),
+        ("Git", "Vorbereiten: Markiert alle Änderungen für den Commit", "git add ."),
+        ("Git", "Speichern: Sichert den Stand lokal unter meinem Namen Michael", 'git commit -m "..."'),
+        ("Git", "Senden: Lädt lokale Änderungen zu GitHub hoch", "git push"),
+        ("Git", "Kontrolle: Zeigt die Historie kompakt in einer Zeile", "git log --oneline"),
+        ("Git", "Release: Erstellt sauberes Paket ohne Ballast", 'zip -r Name.zip . -x "*.git*" "*venv*"')
     ]
     
     cursor.executemany(
