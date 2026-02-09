@@ -11,8 +11,8 @@ dist/
 *.spec
 
 # Datenbank (Lokal & TrueNAS)
-*.db
-commands.db
+#*.db
+#commands.db
 
 # macOS
 .DS_Store
