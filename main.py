@@ -85,12 +85,13 @@ class AdminApp:
         search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         
         # Treeview für Datenanzeige
-        self.tree = ttk.Treeview(main_frame, columns=("ID", "Kategorie", "Beschreibung", "Befehl", "Copy"), show="headings")
+        self.tree = ttk.Treeview(main_frame, columns=("ID", "Kategorie", "Beschreibung", "Befehl", "Copy", "Run"), show="headings")
         self.tree.heading("ID", text="ID")
         self.tree.heading("Kategorie", text="Kategorie")
         self.tree.heading("Beschreibung", text="Beschreibung")
         self.tree.heading("Befehl", text="Befehl")
         self.tree.heading("Copy", text="")
+        self.tree.heading("Run", text="")
         
         # Spaltenbreiten optimieren
         self.tree.column("ID", width=50, stretch=False)
@@ -128,8 +129,8 @@ class AdminApp:
             """, (category,))
         
         for row in self.cursor.fetchall():
-            # Korrekte Reihenfolge: ID, Kategorie, Beschreibung, Befehl, Copy
-            self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"))
+            # Korrekte Reihenfolge: ID, Kategorie, Beschreibung, Befehl, Copy, Run
+            self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋", "▶️"))
     
     def update_filter(self, *args):
         """Aktualisiert die Liste basierend auf aktuellem Filter"""
@@ -242,11 +243,79 @@ class AdminApp:
         region = self.tree.identify_region(event.x, event.y)
         if region == "cell":
             column = self.tree.identify_column(event.x)
-            if column == "#5":  # Letzte Spalte (Copy)
+            if column == "#5":  # Copy-Spalte
                 item = self.tree.identify_row(event.y)
                 db_id = self.tree.item(item)['values'][0]
                 self.copy_command(db_id)
+            elif column == "#6":  # Run-Spalte
+                item = self.tree.identify_row(event.y)
+                db_id = self.tree.item(item)['values'][0]
+                self.execute_command(db_id)
     
+    def execute_command(self, db_id):
+        """Führt den ausgewählten Befehl aus"""
+        try:
+            for item_id in self.tree.get_children():
+                values = self.tree.item(item_id)['values']
+                current_id = str(values[0])
+                if current_id == str(db_id):
+                    command = values[3]
+                    
+                    # Sicherheitsabfrage
+                    if not messagebox.askyesno(
+                        "Befehl ausführen", 
+                        f"Sind Sie sicher, dass Sie diesen Befehl ausführen möchten?\n\n{command}",
+                        parent=self.root
+                    ):
+                        return
+                    
+                    # Ausführung des Befehls
+                    import subprocess
+                    process = subprocess.Popen(
+                        command,
+                        shell=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True
+                    )
+                    stdout, stderr = process.communicate()
+                    
+                    # Ergebnis anzeigen
+                    result_window = tk.Toplevel(self.root)
+                    result_window.title("Befehlsausgabe")
+                    result_window.geometry("800x600")
+                    
+                    text_frame = ttk.Frame(result_window)
+                    text_frame.pack(fill="both", expand=True, padx=5, pady=5)
+                    
+                    text = tk.Text(text_frame, wrap="word")
+                    text.pack(fill="both", expand=True)
+                    
+                    scrollbar = ttk.Scrollbar(text_frame, orient="vertical", command=text.yview)
+                    scrollbar.pack(side="right", fill="y")
+                    text.config(yscrollcommand=scrollbar.set)
+                    
+                    if stdout:
+                        text.insert("end", "Standard Output:\n")
+                        text.insert("end", stdout)
+                    
+                    if stderr:
+                        text.insert("end", "\n\nStandard Error:\n")
+                        text.insert("end", stderr)
+                    
+                    # Visuelles Feedback
+                    self.tree.set(item_id, column=5, value="✅")
+                    self.root.after(2000, lambda i=item_id: self.tree.set(i, column=5, value="▶️"))
+                    
+                    return
+                    
+        except Exception as e:
+            messagebox.showerror(
+                "Fehler", 
+                f"Befehlsausführung fehlgeschlagen:\n{str(e)}",
+                parent=self.root
+            )
+
     def copy_command(self, db_id):
         print('KLICK REGISTRIERT')
         print('\n==== COPY COMMAND CALLED ====')
