@@ -254,69 +254,6 @@ class AdminApp:
                 db_id = self.tree.item(item)['values'][0]
                 self.execute_command(db_id)
     
-    def execute_command(self, db_id):
-        """Führt den ausgewählten Befehl aus"""
-        try:
-            for item_id in self.tree.get_children():
-                values = self.tree.item(item_id)['values']
-                current_id = str(values[0])
-                if current_id == str(db_id):
-                    command = values[3]
-                    
-                    # Sicherheitsabfrage
-                    if not messagebox.askyesno(
-                        "Befehl ausführen", 
-                        f"Sind Sie sicher, dass Sie diesen Befehl ausführen möchten?\n\n{command}",
-                        parent=self.root
-                    ):
-                        return
-                    
-                    # Ausführung des Befehls
-                    import subprocess
-                    process = subprocess.Popen(
-                        command,
-                        shell=True,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        text=True
-                    )
-                    stdout, stderr = process.communicate()
-                    
-                    # Ergebnis anzeigen
-                    result_window = tk.Toplevel(self.root)
-                    result_window.title("Befehlsausgabe")
-                    result_window.geometry("800x600")
-                    
-                    text_frame = ttk.Frame(result_window)
-                    text_frame.pack(fill="both", expand=True, padx=5, pady=5)
-                    
-                    text = tk.Text(text_frame, wrap="word")
-                    text.pack(fill="both", expand=True)
-                    
-                    scrollbar = ttk.Scrollbar(text_frame, orient="vertical", command=text.yview)
-                    scrollbar.pack(side="right", fill="y")
-                    text.config(yscrollcommand=scrollbar.set)
-                    
-                    if stdout:
-                        text.insert("end", "Standard Output:\n")
-                        text.insert("end", stdout)
-                    
-                    if stderr:
-                        text.insert("end", "\n\nStandard Error:\n")
-                        text.insert("end", stderr)
-                    
-                    # Visuelles Feedback
-                    self.tree.set(item_id, column=5, value="✅")
-                    self.root.after(2000, lambda i=item_id: self.tree.set(i, column=5, value="▶️"))
-                    
-                    return
-                    
-        except Exception as e:
-            messagebox.showerror(
-                "Fehler", 
-                f"Befehlsausführung fehlgeschlagen:\n{str(e)}",
-                parent=self.root
-            )
 
     def execute_command(self, db_id):
         """Führt den ausgewählten Befehl sicher aus"""
