@@ -1,5 +1,6 @@
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import messagebox, ttk, simpledialog
+import re
 import sqlite3
 import pyperclip
 import os
@@ -264,7 +265,36 @@ class AdminApp:
                 if current_id == str(db_id):
                     command = values[3]
                     
-                    # Sicherheitsabfrage mit vollständigem Befehl
+                    # Platzhalter-Erkennung mit Regex
+                    placeholders = re.findall(r'\{(.+?)\}', command)
+                    substitutions = {}
+                    
+                    for placeholder in placeholders:
+                        # Default-Wert bestimmen
+                        default_value = ""
+                        if "pfad" in placeholder.lower():
+                            default_value = os.getcwd()
+                        
+                        # Eingabe-Dialog für jeden Platzhalter
+                        user_input = simpledialog.askstring(
+                            title="Parameter eingeben",
+                            prompt=f"Wert für '{placeholder}' eingeben:",
+                            initialvalue=default_value,
+                            parent=self.root
+                        )
+                        
+                        # Wenn Cancel gedrückt wurde
+                        if user_input is None:
+                            return
+                            
+                        substitutions[f"{{{placeholder}}}"] = user_input
+                    
+                    # Platzhalter ersetzen
+                    if substitutions:
+                        for placeholder, value in substitutions.items():
+                            command = command.replace(placeholder, value)
+                    
+                    # Finale Sicherheitsabfrage mit ersetztem Befehl
                     if not messagebox.askyesno(
                         "Befehl ausführen", 
                         f"Sind Sie sicher, dass Sie diesen Befehl ausführen möchten?\n\n{command}",
