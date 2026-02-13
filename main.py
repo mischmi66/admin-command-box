@@ -9,18 +9,18 @@ import subprocess
 import threading
 
 def get_db_path():
-    """Prüft verschiedene mögliche Datenbankpfade"""
-    paths = [
-        "/Volumes/app-data/db/commands.db",  # MacBook Pfad
-        "/Volumes/daten/it-service/datenbanken/commands.db",  # Mac Mini Pfad
-        "commands.db"  # Lokale Fallback-DB
-    ]
+    """Gibt den Pfad zur TrueNAS-Datenbank zurück mit strenger Prüfung"""
+    nas_path = "/Volumes/app-data/db/commands.db"
     
-    for path in paths:
-        if os.path.exists(path):
-            return path
+    if not os.path.exists(nas_path):
+        messagebox.showerror(
+            "TrueNAS-Share nicht verfügbar",
+            "TrueNAS-Share nicht gefunden! Bitte stelle sicher, dass app-data gemountet ist.",
+            parent=tk.Tk()  # Temporäres Fenster für die Meldung
+        )
+        raise SystemExit("TrueNAS-Share nicht verfügbar")  # Beendet die Anwendung
     
-    return "commands.db"  # Finaler Fallback
+    return nas_path
 
 class AdminApp:
     def __init__(self, root):
@@ -28,10 +28,17 @@ class AdminApp:
         self.root.title("TrueNAS Admin Tool")
         self.root.geometry("800x600")
         
-        # Datenbankverbindung
-        self.db_path = get_db_path()
-        self.conn = sqlite3.connect(self.db_path)
+        # Datenbankverbindung mit Netzwerk-Optimierungen
+        self.db_path = get_db_path()  # Wirft SystemExit bei Fehler
+        self.conn = sqlite3.connect(
+            self.db_path,
+            timeout=15,  # Längeres Timeout für Netzwerk
+            isolation_level=None  # Autocommit-Modus für bessere Performance
+        )
         self.cursor = self.conn.cursor()
+        # Optimierte Einstellungen für Netzwerkbetrieb
+        self.cursor.execute("PRAGMA journal_mode=WAL")
+        self.cursor.execute("PRAGMA synchronous=NORMAL")
         
         # Tabellen erstellen falls nicht existieren
         self.cursor.execute("""
@@ -76,9 +83,17 @@ class AdminApp:
         main_frame = ttk.Frame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Filter und Suche
+        # Status- und Filterzeile
         filter_frame = ttk.Frame(main_frame)
         filter_frame.pack(fill=tk.X, pady=5)
+        
+        # Statusanzeige für Datenbank
+        db_status = ttk.Label(
+            filter_frame, 
+            text="DB: Netzwerk (TrueNAS)",
+            foreground="green"
+        )
+        db_status.pack(side=tk.LEFT, padx=10)
         
         # Kategorie Filter
         ttk.Label(filter_frame, text="Kategorie:").pack(side=tk.LEFT, padx=5)
