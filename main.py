@@ -322,6 +322,13 @@ class AdminApp:
                     status_label = ttk.Label(output_window, text="Befehl wird ausgeführt...")
                     status_label.pack(side="bottom", fill="x", padx=5, pady=5)
                     
+                    # Abbruch-Button
+                    button_frame = ttk.Frame(output_window)
+                    button_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=5)
+                    
+                    stop_button = ttk.Button(button_frame, text="Abbrechen")
+                    stop_button.pack(side=tk.RIGHT, padx=5)
+                    
                     # Thread für nicht-blockierende Ausführung
                     def run_command():
                         nonlocal command  # Zugriff auf command aus äußerem Scope
@@ -342,23 +349,36 @@ class AdminApp:
                                 universal_newlines=True
                             )
                             
+                            # Abbruch-Funktion
+                            def terminate_process():
+                                process.terminate()
+                                status_label.config(text="Prozess abgebrochen")
+                                stop_button.config(state=tk.DISABLED)
+                            
+                            stop_button.config(command=terminate_process)
+                            
                             # Live-Output lesen
+                            status_label.config(text="Prozess läuft...")
                             while True:
-                                output = process.stdout.readline()
-                                if output == '' and process.poll() is not None:
-                                    break
-                                if output:
-                                    text_widget.insert("end", output)
-                                    text_widget.see("end")
+                                # stdout lesen
+                                stdout_line = process.stdout.readline()
+                                if stdout_line:
+                                    text_widget.insert(tk.END, stdout_line)
+                                    text_widget.see(tk.END)
                                     output_window.update()
+                                
+                                # stderr lesen
+                                stderr_line = process.stderr.readline()
+                                if stderr_line:
+                                    text_widget.insert(tk.END, f"Fehler: {stderr_line}")
+                                    text_widget.see(tk.END)
+                                    output_window.update()
+                                
+                                # Prozess beendet?
+                                if process.poll() is not None:
+                                    break
                             
-                            # Fehler ausgeben falls vorhanden
-                            stderr = process.stderr.read()
-                            if stderr:
-                                text_widget.insert("end", f"\nFehler:\n{stderr}")
-                                text_widget.see("end")
-                            
-                            # Status aktualisieren
+                            # Finalen Status anzeigen
                             return_code = process.poll()
                             if return_code == 0:
                                 status_label.config(text="Befehl erfolgreich ausgeführt")
@@ -367,11 +387,14 @@ class AdminApp:
                                 status_label.config(text=f"Befehl fehlgeschlagen (Exit-Code: {return_code})")
                                 self.tree.set(item_id, column=5, value="❌")
                             
+                            # Button deaktivieren
+                            stop_button.config(state=tk.DISABLED)
+                            
                             # Icon nach 3 Sekunden zurücksetzen
                             self.root.after(3000, lambda i=item_id: self.tree.set(i, column=5, value="▶️"))
                             
                         except Exception as e:
-                            text_widget.insert("end", f"\nFehler bei der Ausführung: {str(e)}")
+                            text_widget.insert(tk.END, f"\nFehler bei der Ausführung: {str(e)}")
                             status_label.config(text="Fehler bei der Ausführung")
                             self.tree.set(item_id, column=5, value="❌")
                             self.root.after(3000, lambda i=item_id: self.tree.set(i, column=5, value="▶️"))
