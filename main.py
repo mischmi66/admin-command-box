@@ -294,6 +294,7 @@ class AdminApp:
                     
                     # Thread für nicht-blockierende Ausführung
                     def run_command():
+                        nonlocal command  # Zugriff auf command aus äußerem Scope
                         try:
                             # Python-Skripte im venv-Kontext ausführen
                             if command.strip().endswith('.py'):
