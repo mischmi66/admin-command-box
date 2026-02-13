@@ -1,19 +1,8 @@
-# Python
-__pycache__/
-*.py[cod]
-*.class
-.venv/
 venv/
-
-# PyInstaller (Build-Ordner)
-build/
 dist/
-*.spec
-
-# Datenbank (Lokal & TrueNAS)
-#*.db
-#commands.db
-
-# macOS
+build/
+*.db
+*.pyc
 .DS_Store
-.aider*
+__pycache__/
+Admin-Command-Box.spec
