@@ -15,10 +15,38 @@ The goal was to create a tool that offers:
 * **SQLite Backend:** A robust, local database ensures your data stays private and fast.
 * **Simplicity First:** Designed for clarity and ease of use.
 
+## Development Setup
+
+1. **Create Virtual Environment:**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+2. **Install Dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Run the Application:**
+   ```bash
+   python3 main.py
+   ```
+
+4. **Run Tests:**
+   ```bash
+   pytest
+   ```
+
+5. **Format Code:**
+   ```bash
+   black .
+   isort .
+   ```
+
 ## How to Use It
-1. **Launch:** Run the main script via `python3 main.py`.
-2. **Search:** Enter a category or a keyword to find the command you need.
-3. **Learn/Execute:** View the command along with its description to understand exactly what it does before you run it.
+1. **Search:** Enter a category or a keyword to find the command you need.
+2. **Learn/Execute:** View the command along with its description to understand exactly what it does before you run it.
 
 ## Built with AI Collaboration
 This project is a testament to modern software development. It was developed in collaboration with an **AI Assistant**, ensuring clean code structures, efficient database logic, and a focus on best practices. This partnership allowed for rapid prototyping and a high level of technical accuracy.

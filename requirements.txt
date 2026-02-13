@@ -1,7 +1,15 @@
-altgraph==0.17.5
-macholib==1.16.4
-packaging==26.0
+# Core dependencies
+pyperclip==1.11.0
+sqlite3==3.45.1
+tkinter==8.6
+
+# Development dependencies
+black==24.1.1
+flake8==6.1.0
+isort==5.13.2
+pytest==8.0.0
+
+# Packaging dependencies
 pyinstaller==6.18.0
 pyinstaller-hooks-contrib==2026.0
-pyperclip==1.11.0
 setuptools==81.0.0
