@@ -3,6 +3,8 @@ from tkinter import messagebox, ttk
 import sqlite3
 import pyperclip
 import os
+import subprocess
+import threading
 
 def get_db_path():
     """Prüft verschiedene mögliche Datenbankpfade"""
@@ -150,8 +152,8 @@ class AdminApp:
         
         self.cursor.execute(query, params)
         for row in self.cursor.fetchall():
-            # Korrekte Reihenfolge: ID, Kategorie, Beschreibung, Befehl, Copy
-            self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋"))
+            # Korrekte Reihenfolge: ID, Kategorie, Beschreibung, Befehl, Copy, Run
+            self.tree.insert("", tk.END, values=(row[0], row[1], row[3], row[2], "📋", "▶️"))
     
     def filter_data(self, event=None):
         """Trigger für die Suche - ruft einfach update_filter auf"""
@@ -313,6 +315,108 @@ class AdminApp:
             messagebox.showerror(
                 "Fehler", 
                 f"Befehlsausführung fehlgeschlagen:\n{str(e)}",
+                parent=self.root
+            )
+
+    def execute_command(self, db_id):
+        """Führt den ausgewählten Befehl sicher aus"""
+        try:
+            for item_id in self.tree.get_children():
+                values = self.tree.item(item_id)['values']
+                current_id = str(values[0])
+                if current_id == str(db_id):
+                    command = values[3]
+                    
+                    # Sicherheitsabfrage mit vollständigem Befehl
+                    if not messagebox.askyesno(
+                        "Befehl ausführen", 
+                        f"Sind Sie sicher, dass Sie diesen Befehl ausführen möchten?\n\n{command}",
+                        parent=self.root
+                    ):
+                        return
+                    
+                    # Output-Fenster erstellen
+                    output_window = tk.Toplevel(self.root)
+                    output_window.title(f"Befehlsausgabe: {command[:50]}...")
+                    output_window.geometry("800x600")
+                    
+                    # Scrollbares Text-Widget
+                    text_frame = ttk.Frame(output_window)
+                    text_frame.pack(fill="both", expand=True, padx=5, pady=5)
+                    
+                    text_widget = tk.Text(text_frame, wrap="word")
+                    text_widget.pack(side="left", fill="both", expand=True)
+                    
+                    scrollbar = ttk.Scrollbar(text_frame, orient="vertical", command=text_widget.yview)
+                    scrollbar.pack(side="right", fill="y")
+                    text_widget.config(yscrollcommand=scrollbar.set)
+                    
+                    # Status-Label
+                    status_label = ttk.Label(output_window, text="Befehl wird ausgeführt...")
+                    status_label.pack(side="bottom", fill="x", padx=5, pady=5)
+                    
+                    # Thread für nicht-blockierende Ausführung
+                    def run_command():
+                        try:
+                            # Python-Skripte im venv-Kontext ausführen
+                            if command.strip().endswith('.py'):
+                                venv_python = os.path.join(os.path.dirname(__file__), 'venv', 'bin', 'python3')
+                                if os.path.exists(venv_python):
+                                    command = f"{venv_python} {command}"
+                            
+                            process = subprocess.Popen(
+                                command,
+                                shell=True,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                text=True,
+                                bufsize=1,
+                                universal_newlines=True
+                            )
+                            
+                            # Live-Output lesen
+                            while True:
+                                output = process.stdout.readline()
+                                if output == '' and process.poll() is not None:
+                                    break
+                                if output:
+                                    text_widget.insert("end", output)
+                                    text_widget.see("end")
+                                    output_window.update()
+                            
+                            # Fehler ausgeben falls vorhanden
+                            stderr = process.stderr.read()
+                            if stderr:
+                                text_widget.insert("end", f"\nFehler:\n{stderr}")
+                                text_widget.see("end")
+                            
+                            # Status aktualisieren
+                            return_code = process.poll()
+                            if return_code == 0:
+                                status_label.config(text="Befehl erfolgreich ausgeführt")
+                                self.tree.set(item_id, column=5, value="✅")
+                            else:
+                                status_label.config(text=f"Befehl fehlgeschlagen (Exit-Code: {return_code})")
+                                self.tree.set(item_id, column=5, value="❌")
+                            
+                            # Icon nach 3 Sekunden zurücksetzen
+                            self.root.after(3000, lambda i=item_id: self.tree.set(i, column=5, value="▶️"))
+                            
+                        except Exception as e:
+                            text_widget.insert("end", f"\nFehler bei der Ausführung: {str(e)}")
+                            status_label.config(text="Fehler bei der Ausführung")
+                            self.tree.set(item_id, column=5, value="❌")
+                            self.root.after(3000, lambda i=item_id: self.tree.set(i, column=5, value="▶️"))
+                    
+                    # Thread starten
+                    threading.Thread(target=run_command, daemon=True).start()
+                    
+                    return
+                    
+        except Exception as e:
+            messagebox.showerror(
+                "Fehler", 
+                f"Befehlsausführung konnte nicht gestartet werden:\n{str(e)}",
                 parent=self.root
             )
 
