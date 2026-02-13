@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk, simpledialog
 import re
+import time
 import sqlite3
 import pyperclip
 import os
@@ -354,11 +355,23 @@ class AdminApp:
                                 process.terminate()
                                 status_label.config(text="Prozess abgebrochen")
                                 stop_button.config(state=tk.DISABLED)
+                                text_widget.insert(tk.END, "\n[ABBRUCH] Der Befehl wurde vom Benutzer gestoppt\n")
+                                text_widget.see(tk.END)
+                                output_window.update()
                             
                             stop_button.config(command=terminate_process)
                             
+                            # Start-Zeitstempel
+                            start_time = time.time()
+                            timestamp = time.strftime("%H:%M:%S")
+                            text_widget.insert(tk.END, f"[START] Befehl wird ausgeführt um: {timestamp}\n")
+                            text_widget.see(tk.END)
+                            output_window.update()
+                            
                             # Live-Output lesen
                             status_label.config(text="Prozess läuft...")
+                            last_heartbeat = time.time()
+                            
                             while True:
                                 # stdout lesen
                                 stdout_line = process.stdout.readline()
@@ -366,6 +379,7 @@ class AdminApp:
                                     text_widget.insert(tk.END, stdout_line)
                                     text_widget.see(tk.END)
                                     output_window.update()
+                                    last_heartbeat = time.time()
                                 
                                 # stderr lesen
                                 stderr_line = process.stderr.readline()
@@ -373,19 +387,35 @@ class AdminApp:
                                     text_widget.insert(tk.END, f"Fehler: {stderr_line}")
                                     text_widget.see(tk.END)
                                     output_window.update()
+                                    last_heartbeat = time.time()
+                                
+                                # Heartbeat alle 5 Sekunden
+                                if time.time() - last_heartbeat > 5:
+                                    text_widget.insert(tk.END, ".\n")
+                                    text_widget.see(tk.END)
+                                    output_window.update()
+                                    last_heartbeat = time.time()
                                 
                                 # Prozess beendet?
                                 if process.poll() is not None:
                                     break
                             
                             # Finalen Status anzeigen
+                            end_time = time.time()
+                            duration = round(end_time - start_time, 2)
                             return_code = process.poll()
+                            
                             if return_code == 0:
                                 status_label.config(text="Befehl erfolgreich ausgeführt")
                                 self.tree.set(item_id, column=5, value="✅")
+                                text_widget.insert(tk.END, f"\n[ENDE] Abgeschlossen nach {duration} Sekunden\n")
                             else:
                                 status_label.config(text=f"Befehl fehlgeschlagen (Exit-Code: {return_code})")
                                 self.tree.set(item_id, column=5, value="❌")
+                                text_widget.insert(tk.END, f"\n[ENDE] Fehler nach {duration} Sekunden (Exit-Code: {return_code})\n")
+                            
+                            text_widget.see(tk.END)
+                            output_window.update()
                             
                             # Button deaktivieren
                             stop_button.config(state=tk.DISABLED)
