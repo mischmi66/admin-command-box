@@ -202,10 +202,16 @@ class AdminApp:
         description_entry.grid(row=2, column=1, padx=5, pady=5)
         
         def save():
+            command = command_entry.get()
+            # Validierung der Klammern
+            warning = self.validate_command(command)
+            if warning:
+                messagebox.showwarning("Klammer-Check", warning, parent=add_window)
+            
             self.cursor.execute("""
                 INSERT INTO commands (kategorie, befehl, beschreibung)
                 VALUES (?, ?, ?)
-            """, (self.category_var.get(), command_entry.get(), description_entry.get()))
+            """, (self.category_var.get(), command, description_entry.get()))
             self.conn.commit()
             self.load_data()
             add_window.destroy()
@@ -244,13 +250,19 @@ class AdminApp:
         description_entry.grid(row=2, column=1, padx=5, pady=5)
         
         def save():
+            command = command_entry.get()
+            # Validierung der Klammern
+            warning = self.validate_command(command)
+            if warning:
+                messagebox.showwarning("Klammer-Check", warning, parent=edit_window)
+            
             self.cursor.execute("""
                 UPDATE commands SET
                 kategorie = ?,
                 befehl = ?,
                 beschreibung = ?
                 WHERE id = ?
-            """, (self.category_var.get(), command_entry.get(), description_entry.get(), item_id))
+            """, (self.category_var.get(), command, description_entry.get(), item_id))
             self.conn.commit()
             self.load_data()
             edit_window.destroy()
@@ -539,6 +551,13 @@ class AdminApp:
         # Platzhalter für Paste-Logik
         messagebox.showinfo("Eingefügt", f"Zwischenablageinhalt: {clipboard_content}")
     
+    def validate_command(self, command):
+        """Prüft auf runde Klammern mit Textinhalt und gibt Warnung zurück"""
+        matches = re.findall(r'\(([^)]+)\)', command)
+        if matches:
+            return f"Achtung: Du hast runde Klammern ( ) verwendet. Meintest du geschweifte Klammern {{ }}, um einen interaktiven Platzhalter zu erstellen?\n\nGefundene Klammern: {', '.join(matches)}"
+        return None
+
     def __del__(self):
         self.conn.close()
 
