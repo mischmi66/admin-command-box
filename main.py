@@ -33,13 +33,20 @@ class AdminApp:
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
         
-        # Tabelle erstellen falls nicht existiert
+        # Tabellen erstellen falls nicht existieren
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS commands (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 kategorie TEXT NOT NULL,
                 befehl TEXT NOT NULL,
                 beschreibung TEXT
+            )
+        """)
+        
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS placeholder_history (
+                placeholder_name TEXT PRIMARY KEY,
+                last_value TEXT NOT NULL
             )
         """)
         self.conn.commit()
@@ -276,6 +283,18 @@ class AdminApp:
                         if "pfad" in placeholder.lower():
                             default_value = os.getcwd()
                         
+                        # History-Wert laden falls vorhanden
+                        try:
+                            self.cursor.execute(
+                                "SELECT last_value FROM placeholder_history WHERE placeholder_name = ?",
+                                (placeholder,)
+                            )
+                            history_value = self.cursor.fetchone()
+                            if history_value:
+                                default_value = history_value[0]
+                        except Exception as e:
+                            print(f"Fehler beim Laden der History: {str(e)}")
+                        
                         # Eingabe-Dialog für jeden Platzhalter
                         user_input = simpledialog.askstring(
                             title="Parameter eingeben",
@@ -302,6 +321,19 @@ class AdminApp:
                         parent=self.root
                     ):
                         return
+                    
+                    # Platzhalter-Werte in History speichern
+                    try:
+                        for placeholder, value in substitutions.items():
+                            # Platzhalternamen ohne Klammern extrahieren
+                            placeholder_name = placeholder.strip("{}")
+                            self.cursor.execute(
+                                "REPLACE INTO placeholder_history (placeholder_name, last_value) VALUES (?, ?)",
+                                (placeholder_name, value)
+                            )
+                        self.conn.commit()
+                    except Exception as e:
+                        print(f"Fehler beim Speichern der History: {str(e)}")
                     
                     # Output-Fenster erstellen
                     output_window = tk.Toplevel(self.root)
